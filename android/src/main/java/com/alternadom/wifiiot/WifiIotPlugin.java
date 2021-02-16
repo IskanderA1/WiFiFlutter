@@ -653,6 +653,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
         String ssid = poCall.argument("ssid");
         String password = poCall.argument("password");
         String security = poCall.argument("security");
+        Boolean isHidden = poCall.argument("isHidden");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             final WifiNetworkSuggestion.Builder suggestedNet = new WifiNetworkSuggestion.Builder();
@@ -679,7 +680,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
             poResult.success(null);
         } else {
             // Deprecated version
-            android.net.wifi.WifiConfiguration conf = generateConfiguration(ssid, password, security);
+            android.net.wifi.WifiConfiguration conf = generateConfiguration(ssid, password, security,isHidden);
 
             int updateNetwork = registerWifiNetworkDeprecated(conf);
 
@@ -705,6 +706,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
                 String ssid = poCall.argument("ssid");
                 String password = poCall.argument("password");
                 Boolean joinOnce = poCall.argument("join_once");
+                Boolean isHidden = poCall.argument("isHidden");
 
                 String security = null;
                 List<ScanResult> results = moWiFi.getScanResults();
@@ -715,7 +717,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
                     }
                 }
 
-                connectTo(poResult, ssid, password, security, joinOnce);
+                connectTo(poResult, ssid, password, security, joinOnce, isHidden);
             }
         }.start();
     }
