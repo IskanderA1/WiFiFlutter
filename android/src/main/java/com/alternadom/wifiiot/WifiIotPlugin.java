@@ -631,8 +631,9 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
                 String password = poCall.argument("password");
                 String security = poCall.argument("security");
                 Boolean joinOnce = poCall.argument("join_once");
+                Boolean isHidden = poCall.argument("isHidden");
 
-                connectTo(poResult, ssid, password, security, joinOnce);
+                connectTo(poResult, ssid, password, security, joinOnce,isHidden);
 
             }
         }.start();
@@ -893,10 +894,10 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
     }
 
     /// Method to connect to WIFI Network
-    private void connectTo(final Result poResult, final String ssid, final String password, final String security, final Boolean joinOnce) {
+    private void connectTo(final Result poResult, final String ssid, final String password, final String security, final Boolean joinOnce, final Boolean isHidden) {
         final Handler handler = new Handler(Looper.getMainLooper());
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            final boolean connected = connectToDeprecated(ssid, password, security, joinOnce);
+            final boolean connected = connectToDeprecated(ssid, password, security, joinOnce, isHidden);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -908,6 +909,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
             final WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
             // set ssid
             builder.setSsid(ssid);
+            builder.setIsHiddenSsid(isHidden);
             // set security
             if (security != null && security.toUpperCase().equals("WPA")) {
                 builder.setWpa2Passphrase(password);
@@ -975,7 +977,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
         return updateNetwork;
     }
 
-    private android.net.wifi.WifiConfiguration generateConfiguration(String ssid, String password, String security) {
+    private android.net.wifi.WifiConfiguration generateConfiguration(String ssid, String password, String security, Boolean isHidden) {
         android.net.wifi.WifiConfiguration conf = new android.net.wifi.WifiConfiguration();
         conf.SSID = "\"" + ssid + "\"";
 
@@ -989,6 +991,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
             conf.preSharedKey = "\"" + password + "\"";
 
             conf.allowedProtocols.set(android.net.wifi.WifiConfiguration.Protocol.RSN);
+            conf.hiddenSSID = isHidden;
 
             conf.allowedKeyManagement.set(android.net.wifi.WifiConfiguration.KeyMgmt.WPA_PSK);
 
@@ -1017,9 +1020,9 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
     }
 
     @SuppressWarnings("deprecation")
-    private Boolean connectToDeprecated(String ssid, String password, String security, Boolean joinOnce) {
+    private Boolean connectToDeprecated(String ssid, String password, String security, Boolean joinOnce, Boolean isHidden) {
         /// Make new configuration
-        android.net.wifi.WifiConfiguration conf = generateConfiguration(ssid, password, security);
+        android.net.wifi.WifiConfiguration conf = generateConfiguration(ssid, password, security, isHidden);
 
         int updateNetwork = registerWifiNetworkDeprecated(conf);
 

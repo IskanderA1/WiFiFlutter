@@ -213,7 +213,7 @@ class WiFiForIoTPlugin {
   static Future<bool> connect(String ssid,
       {String password,
       NetworkSecurity security = NetworkSecurity.NONE,
-      bool joinOnce = true}) async {
+      bool joinOnce = true, bool isHidden = false}) async {
     if (!Platform.isIOS && !await isEnabled()) await setEnabled(true);
     bool bResult;
     try {
@@ -223,6 +223,7 @@ class WiFiForIoTPlugin {
         "join_once": joinOnce,
         "security":
             security?.toString()?.substring('$NetworkSecurity'.length + 1),
+        "isHidden": isHidden
       });
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
