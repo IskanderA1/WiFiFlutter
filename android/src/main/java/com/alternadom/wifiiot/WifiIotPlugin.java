@@ -20,6 +20,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,7 +31,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.NonNull;
 import info.whitebyte.hotspotmanager.ClientScanResult;
 import info.whitebyte.hotspotmanager.FinishScanListener;
 import info.whitebyte.hotspotmanager.WifiApManager;
@@ -59,6 +61,7 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
     private Activity moActivity;
     private BroadcastReceiver receiver;
     private ConnectivityManager.NetworkCallback networkCallback;
+    private List<WifiNetworkSuggestion> networkSuggestions;
     private List<String> ssidsToBeRemovedOnExit = new ArrayList<String>();
 
     // initialize members of this class with Context
@@ -907,50 +910,37 @@ public class WifiIotPlugin implements FlutterPlugin, ActivityAware, MethodCallHa
                 }
             });
         } else {
-            // Make new network specifier
-            final WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
+            final WifiNetworkSuggestion.Builder builder = new WifiNetworkSuggestion.Builder();
             // set ssid
             builder.setSsid(ssid);
             builder.setIsHiddenSsid(isHidden);
-            // set security
+            // set password
             if (security != null && security.toUpperCase().equals("WPA")) {
                 builder.setWpa2Passphrase(password);
-            } else if (security != null && security.toUpperCase().equals("WEP")) {
-                // WEP is not supported
-                poResult.error("Error", "WEP is not supported for Android SDK " + Build.VERSION.SDK_INT, "");
-                return;
             }
 
-            final NetworkRequest networkRequest = new NetworkRequest.Builder()
-                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .setNetworkSpecifier(builder.build())
-                    .build();
+            // remove suggestions if already existing
+            if (networkSuggestions != null) {
+                moWiFi.removeNetworkSuggestions(networkSuggestions);
+            }
 
-            final ConnectivityManager connectivityManager = (ConnectivityManager) moContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            //builder.setIsAppInteractionRequired(true);
+            final WifiNetworkSuggestion suggestion = builder.build();
 
+            networkSuggestions = new ArrayList<>();
+            networkSuggestions.add(suggestion);
+            if (joinOnce != null && joinOnce) {
+            }
 
-            if (networkCallback != null)
-                connectivityManager.unregisterNetworkCallback(networkCallback);
-
-            networkCallback = new ConnectivityManager.NetworkCallback() {
-                @Override
-                public void onAvailable(@NonNull Network network) {
-                    super.onAvailable(network);
-                    poResult.success(true);
-                }
-
-                @Override
-                public void onUnavailable() {
-                    super.onUnavailable();
-                    poResult.success(false);
-                }
-            };
-
-
-            connectivityManager.requestNetwork(networkRequest, networkCallback, handler, 30 * 1000);
-
-            // TODO remove network in cleanup, if joinOnce
+            final int status = moWiFi.addNetworkSuggestions(networkSuggestions);
+            Log.d(WifiIotPlugin.class.getSimpleName(), "status: " + status);
+            
+            handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        poResult.success(status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS);
+                    }
+                });
         }
     }
 
