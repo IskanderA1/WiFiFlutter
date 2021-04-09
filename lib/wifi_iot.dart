@@ -4,6 +4,27 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+// static Future<bool> connect(String ssid,
+// {String password,
+//     NetworkSecurity security = NetworkSecurity.NONE,
+// bool joinOnce = true, bool isHidden = false}) async {
+// if (!Platform.isIOS && !await isEnabled()) await setEnabled(true);
+// bool bResult;
+// try {
+// bResult = await _channel.invokeMethod('connect', {
+// "ssid": ssid.toString(),
+// "password": password.toString(),
+// "join_once": joinOnce,
+// "security":
+// security?.toString()?.substring('$NetworkSecurity'.length + 1),
+// "isHidden": isHidden
+// });
+// } on MissingPluginException catch (e) {
+// print("MissingPluginException : ${e.toString()}");
+// }
+// return bResult != null && bResult;
+// }
+
 enum WIFI_AP_STATE {
   WIFI_AP_STATE_DISABLING,
   WIFI_AP_STATE_DISABLED,
@@ -16,12 +37,12 @@ enum NetworkSecurity { WPA, WEP, NONE }
 
 const MethodChannel _channel = const MethodChannel('wifi_iot');
 const EventChannel _eventChannel =
-    const EventChannel('plugins.wififlutter.io/wifi_scan');
+const EventChannel('plugins.wififlutter.io/wifi_scan');
 
 class WiFiForIoTPlugin {
   static Future<bool> isWiFiAPEnabled() async {
     Map<String, String> htArguments = Map();
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('isWiFiAPEnabled', htArguments);
     } on MissingPluginException catch (e) {
@@ -52,7 +73,7 @@ class WiFiForIoTPlugin {
 
   static Future<bool> isWiFiAPSSIDHidden() async {
     Map<String, String> htArguments = Map();
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('isSSIDHidden', htArguments);
     } on MissingPluginException catch (e) {
@@ -71,9 +92,9 @@ class WiFiForIoTPlugin {
     }
   }
 
-  static Future<int> getWiFiAPState() async {
+  static Future<int?> getWiFiAPState() async {
     Map<String, String> htArguments = Map();
-    int iResult;
+    int? iResult;
     try {
       iResult = await _channel.invokeMethod('getWiFiAPState', htArguments);
     } on MissingPluginException catch (e) {
@@ -87,11 +108,11 @@ class WiFiForIoTPlugin {
     Map<String, Object> htArguments = Map();
     htArguments["onlyReachables"] = onlyReachables;
     htArguments["reachableTimeout"] = reachableTimeout;
-    String sResult;
-    List<APClient> htResult = List();
+    String? sResult;
+    List<APClient> htResult = <APClient>[];
     try {
       sResult = await _channel.invokeMethod('getClientList', htArguments);
-      htResult = APClient.parse(sResult);
+      htResult = APClient.parse(sResult!);
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
     }
@@ -100,13 +121,13 @@ class WiFiForIoTPlugin {
 
   static void setWiFiAPConfiguration(Object poWiFiConfig) async {
     Map<String, bool> htArguments = Map();
-    htArguments["wifi_config"] = poWiFiConfig;
+    htArguments["wifi_config"] = poWiFiConfig as bool;
     await _channel.invokeMethod('setWiFiAPConfiguration', htArguments);
   }
 
-  static Future<String> getWiFiAPSSID() async {
+  static Future<String?> getWiFiAPSSID() async {
     Map<String, String> htArguments = Map();
-    String sResult;
+    String? sResult;
     try {
       sResult = await _channel.invokeMethod('getWiFiAPSSID', htArguments);
     } on MissingPluginException catch (e) {
@@ -125,12 +146,12 @@ class WiFiForIoTPlugin {
     }
   }
 
-  static Future<String> getWiFiAPPreSharedKey() async {
+  static Future<String?> getWiFiAPPreSharedKey() async {
     Map<String, String> htArguments = Map();
-    String sResult;
+    String? sResult;
     try {
       sResult =
-          await _channel.invokeMethod('getWiFiAPPreSharedKey', htArguments);
+      await _channel.invokeMethod('getWiFiAPPreSharedKey', htArguments);
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
     }
@@ -147,7 +168,7 @@ class WiFiForIoTPlugin {
     }
   }
 
-  static Stream<List<WifiNetwork>> _onWifiScanResultReady;
+  static  Stream<List<WifiNetwork>>? _onWifiScanResultReady;
 
   static Stream<List<WifiNetwork>> get onWifiScanResultReady {
     if (_onWifiScanResultReady == null) {
@@ -155,16 +176,16 @@ class WiFiForIoTPlugin {
           .receiveBroadcastStream()
           .map((dynamic event) => WifiNetwork.parse(event));
     }
-    return _onWifiScanResultReady;
+    return _onWifiScanResultReady!;
   }
 
-  static Future<List<WifiNetwork>> _loadWifiList() async {
+  static Future<List<WifiNetwork>>? _loadWifiList() async {
     Map<String, String> htArguments = Map();
-    String sResult;
-    List<WifiNetwork> htResult = List();
+    String? sResult;
+    List<WifiNetwork> htResult = <WifiNetwork>[];
     try {
       sResult = await _channel.invokeMethod('loadWifiList', htArguments);
-      htResult = WifiNetwork.parse(sResult);
+      htResult = WifiNetwork.parse(sResult!);
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
     }
@@ -172,14 +193,14 @@ class WiFiForIoTPlugin {
   }
 
   static Future<List<WifiNetwork>> loadWifiList() async {
-    List<WifiNetwork> result = (await _loadWifiList() ?? List<WifiNetwork>());
+    List<WifiNetwork> result = (await _loadWifiList() ?? <WifiNetwork>[]);
     if (result.length >= 1) return result;
 
     result.clear();
     return await WiFiForIoTPlugin.onWifiScanResultReady.first;
   }
 
-  static Future<bool> forceWifiUsage(bool useWifi) async {
+  static Future<bool?> forceWifiUsage(bool useWifi) async {
     Map<String, bool> htArguments = Map();
     htArguments["useWifi"] = useWifi;
     try {
@@ -191,7 +212,7 @@ class WiFiForIoTPlugin {
 
   static Future<bool> isEnabled() async {
     Map<String, String> htArguments = Map();
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('isEnabled', htArguments);
     } on MissingPluginException catch (e) {
@@ -209,21 +230,22 @@ class WiFiForIoTPlugin {
       print("MissingPluginException : ${e.toString()}");
     }
   }
-
+///TODO:
   static Future<bool> connect(String ssid,
-      {String password,
-      NetworkSecurity security = NetworkSecurity.NONE,
-      bool joinOnce = true, bool isHidden = false}) async {
+      {String? password,
+        NetworkSecurity security = NetworkSecurity.NONE,
+        bool joinOnce = true,
+        bool isHidden = false}) async {
     if (!Platform.isIOS && !await isEnabled()) await setEnabled(true);
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('connect', {
         "ssid": ssid.toString(),
         "password": password.toString(),
         "join_once": joinOnce,
+        "isHidden": isHidden,
         "security":
-            security?.toString()?.substring('$NetworkSecurity'.length + 1),
-        "isHidden": isHidden
+        security?.toString()?.substring('$NetworkSecurity'.length + 1),
       });
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
@@ -232,16 +254,16 @@ class WiFiForIoTPlugin {
   }
 
   static Future<bool> registerWifiNetwork(String ssid,
-      {String password,
-      NetworkSecurity security = NetworkSecurity.NONE}) async {
+      {String? password,
+        NetworkSecurity security = NetworkSecurity.NONE}) async {
     if (!Platform.isIOS && !await isEnabled()) await setEnabled(true);
-    bool bResult;
+    bool? bResult;
     try {
       await _channel.invokeMethod('registerWifiNetwork', {
         "ssid": ssid.toString(),
         "password": password.toString(),
         "security":
-            security?.toString()?.substring('$NetworkSecurity'.length + 1),
+        security?.toString()?.substring('$NetworkSecurity'.length + 1),
       });
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
@@ -250,7 +272,9 @@ class WiFiForIoTPlugin {
   }
 
   static Future<bool> findAndConnect(String ssid,
-      {String password, bool joinOnce = true}) async {
+      {String? password,
+        bool joinOnce = true,
+        bool withInternet = false}) async {
     if (!await isEnabled()) {
       await setEnabled(true);
     }
@@ -261,12 +285,13 @@ class WiFiForIoTPlugin {
 //      htArguments["join_once"] = joinOnce;
 //      htArguments["is_wep"] = isWep;
 //    }
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('findAndConnect', {
         "ssid": ssid.toString(),
         "password": password.toString(),
         "join_once": joinOnce,
+        "with_internet": withInternet,
       });
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
@@ -276,7 +301,7 @@ class WiFiForIoTPlugin {
 
   static Future<bool> isConnected() async {
     Map<String, String> htArguments = Map();
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('isConnected', htArguments);
     } on MissingPluginException catch (e) {
@@ -294,9 +319,9 @@ class WiFiForIoTPlugin {
     }
   }
 
-  static Future<String> getSSID() async {
+  static Future<String?> getSSID() async {
     Map<String, String> htArguments = Map();
-    String sResult;
+    String? sResult;
     try {
       sResult = await _channel.invokeMethod('getSSID', htArguments);
     } on MissingPluginException catch (e) {
@@ -305,9 +330,9 @@ class WiFiForIoTPlugin {
     return sResult;
   }
 
-  static Future<String> getBSSID() async {
+  static Future<String?> getBSSID() async {
     Map<String, String> htArguments = Map();
-    String sResult;
+    String? sResult;
     try {
       sResult = await _channel.invokeMethod('getBSSID', htArguments);
     } on MissingPluginException catch (e) {
@@ -316,21 +341,21 @@ class WiFiForIoTPlugin {
     return sResult;
   }
 
-  static Future<int> getCurrentSignalStrength() async {
+  static Future<int?> getCurrentSignalStrength() async {
     Map<String, String> htArguments = Map();
-    int iResult;
+    int? iResult;
     try {
       iResult =
-          await _channel.invokeMethod('getCurrentSignalStrength', htArguments);
+      await _channel.invokeMethod('getCurrentSignalStrength', htArguments);
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
     }
     return iResult;
   }
 
-  static Future<int> getFrequency() async {
+  static Future<int?> getFrequency() async {
     Map<String, String> htArguments = Map();
-    int iResult;
+    int? iResult;
     try {
       iResult = await _channel.invokeMethod('getFrequency', htArguments);
     } on MissingPluginException catch (e) {
@@ -339,9 +364,9 @@ class WiFiForIoTPlugin {
     return iResult;
   }
 
-  static Future<String> getIP() async {
+  static Future<String?> getIP() async {
     Map<String, String> htArguments = Map();
-    String sResult;
+    String? sResult;
     try {
       sResult = await _channel.invokeMethod('getIP', htArguments);
     } on MissingPluginException catch (e) {
@@ -353,7 +378,7 @@ class WiFiForIoTPlugin {
   static Future<bool> removeWifiNetwork(String ssid) async {
     Map<String, String> htArguments = Map();
     htArguments["ssid"] = ssid;
-    bool bResult;
+    bool? bResult;
     try {
       bResult = await _channel.invokeMethod('removeWifiNetwork', htArguments);
     } on MissingPluginException catch (e) {
@@ -365,10 +390,10 @@ class WiFiForIoTPlugin {
   static Future<bool> isRegisteredWifiNetwork(String ssid) async {
     Map<String, String> htArguments = Map();
     htArguments["ssid"] = ssid;
-    bool bResult;
+    bool? bResult;
     try {
       bResult =
-          await _channel.invokeMethod('isRegisteredWifiNetwork', htArguments);
+      await _channel.invokeMethod('isRegisteredWifiNetwork', htArguments);
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
     }
@@ -377,10 +402,10 @@ class WiFiForIoTPlugin {
 }
 
 class APClient {
-  String ipAddr;
-  String hwAddr;
-  String device;
-  bool isReachable;
+  String? ipAddr;
+  String? hwAddr;
+  String? device;
+  bool? isReachable;
 
   APClient.fromJson(Map<String, dynamic> json)
       : ipAddr = json['IPAddr'],
@@ -389,14 +414,14 @@ class APClient {
         isReachable = json['isReachable'];
 
   Map<String, dynamic> toJson() => {
-        'IPAddr': ipAddr,
-        'HWAddr': hwAddr,
-        'Device': device,
-        'isReachable': isReachable,
-      };
+    'IPAddr': ipAddr,
+    'HWAddr': hwAddr,
+    'Device': device,
+    'isReachable': isReachable,
+  };
 
   static List<APClient> parse(String psString) {
-    List<APClient> htList = List();
+    List<APClient> htList = <APClient>[];
 
     List<dynamic> htMapClients = json.decode(psString);
 
@@ -409,13 +434,13 @@ class APClient {
 }
 
 class WifiNetwork {
-  String ssid;
-  String bssid;
-  String capabilities;
-  int frequency;
-  int level;
-  int timestamp;
-  String password;
+  String? ssid;
+  String? bssid;
+  String? capabilities;
+  int? frequency;
+  int? level;
+  int? timestamp;
+  String? password;
 
   WifiNetwork.fromJson(Map<String, dynamic> json)
       : ssid = json['SSID'],
@@ -426,18 +451,17 @@ class WifiNetwork {
         timestamp = json['timestamp'];
 
   Map<String, dynamic> toJson() => {
-        'SSID': ssid,
-        'BSSID': bssid,
-        'capabilities': capabilities,
-        'frequency': frequency,
-        'level': level,
-        'timestamp': timestamp,
-      };
+    'SSID': ssid,
+    'BSSID': bssid,
+    'capabilities': capabilities,
+    'frequency': frequency,
+    'level': level,
+    'timestamp': timestamp,
+  };
 
   static List<WifiNetwork> parse(String psString) {
     /// [{"SSID":"Florian","BSSID":"30:7e:cb:8c:48:e4","capabilities":"[WPA-PSK-CCMP+TKIP][ESS]","frequency":2462,"level":-64,"timestamp":201307720907},{"SSID":"Pi3-AP","BSSID":"b8:27:eb:b1:fa:e1","capabilities":"[WPA2-PSK-CCMP][ESS]","frequency":2437,"level":-66,"timestamp":201307720892},{"SSID":"AlternaDom-SonOff","BSSID":"b8:27:eb:98:b4:81","capabilities":"[WPA2-PSK-CCMP][ESS]","frequency":2437,"level":-86,"timestamp":201307720897},{"SSID":"SFR_1CF0_2GEXT","BSSID":"9c:3d:cf:58:98:07","capabilities":"[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][WPS][ESS]","frequency":2412,"level":-87,"timestamp":201307720887},{"SSID":"Freebox-5CC952","BSSID":"f4:ca:e5:96:71:c4","capabilities":"[WPA-PSK-CCMP][ESS]","frequency":2442,"level":-90,"timestamp":201307720902}]
-
-    List<WifiNetwork> htList = List();
+    List<WifiNetwork> htList = <WifiNetwork>[];
 
     try {
       List<dynamic> htMapNetworks = json.decode(psString);
